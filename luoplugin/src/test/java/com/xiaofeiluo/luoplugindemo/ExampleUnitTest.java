@@ -1,4 +1,4 @@
-package com.xiaofeiluo.luoplugin;
+package com.xiaofeiluo.luoplugindemo;
 
 import org.junit.Test;
 

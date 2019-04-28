@@ -1,4 +1,4 @@
-package com.xiaofeiluo.luoplugin;
+package com.xiaofeiluo.luoplugindemo;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
