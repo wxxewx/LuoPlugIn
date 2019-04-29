@@ -90,8 +90,7 @@ public class MainActivity extends AppCompatActivity {
         }
         return null;
     }
-
-    private boolean copyAssetAndWrite(String fileName) {
+     private boolean copyAssetAndWrite(String fileName) {
         try {
             File cacheDir = getCacheDir();
             if (!cacheDir.exists()) {
