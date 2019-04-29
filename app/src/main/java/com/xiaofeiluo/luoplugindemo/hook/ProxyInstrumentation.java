@@ -1,22 +1,33 @@
 package com.xiaofeiluo.luoplugindemo.hook;
 
 import android.app.Activity;
+import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
 
 import com.xiaofeiluo.luoplugin.StubActivity;
+import com.xiaofeiluo.luoplugindemo.MainActivity;
 
 import java.lang.reflect.Method;
 
-public class ProxyInstrumentation extends Instrumentation{
-    private Instrumentation mBase;
+import dalvik.system.DexClassLoader;
 
-    public ProxyInstrumentation(Instrumentation instrumentation) {
+public class ProxyInstrumentation extends Instrumentation {
+    private Context mContext;
+    private Instrumentation mBase;
+    private Class mainActivity;
+    private DexClassLoader localDexClassLoader;
+
+    public ProxyInstrumentation(Context activity, Instrumentation instrumentation, Class mainActivity, DexClassLoader localDexClassLoader) {
+        this.mContext = activity;
         this.mBase = instrumentation;
+        this.mainActivity = mainActivity;
+        this.localDexClassLoader = localDexClassLoader;
     }
 
 
@@ -44,5 +55,25 @@ public class ProxyInstrumentation extends Instrumentation{
             // 某该死的rom修改了  需要手动适配
             throw new RuntimeException("do not support!!! pls adapt it");
         }
+    }
+
+
+
+    public Activity newActivity(Class<?> clazz, Context context,
+                                IBinder token, Application application, Intent intent, ActivityInfo info,
+                                CharSequence title, Activity parent, String id,
+                                Object lastNonConfigurationInstance) throws InstantiationException,
+            IllegalAccessException {
+        return mBase.newActivity(MainActivity.class, context, token, application, intent, info, title, parent, id, lastNonConfigurationInstance);
+    }
+
+
+
+    public Activity newActivity(ClassLoader cl, String className,
+                                Intent intent)
+            throws InstantiationException, IllegalAccessException,
+            ClassNotFoundException {
+        Intent intent1 = new Intent(mContext, mainActivity);
+        return mBase.newActivity(localDexClassLoader,"com.xiaofeiluo.viewtoimagedemo.MainActivity2", intent1);
     }
 }
