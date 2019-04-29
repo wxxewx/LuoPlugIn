@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.Parcelable;
 import android.util.Log;
 
 import com.xiaofeiluo.luoplugin.StubActivity;
@@ -35,6 +36,7 @@ public class ProxyInstrumentation extends Instrumentation {
             Context who, IBinder contextThread, IBinder token, Activity target,
             Intent intent, int requestCode, Bundle options) {
         Intent stubIntent = new Intent(who, StubActivity.class);
+        stubIntent.putExtra("oldIntent", intent);
         // Hook之前, XXX到此一游!
         Log.e("ProxyInstrumentation", "\n执行了startActivity, 参数如下: \n" + "who = [" + who + "], " +
                 "\ncontextThread = [" + contextThread + "], \ntoken = [" + token + "], " +
@@ -58,22 +60,22 @@ public class ProxyInstrumentation extends Instrumentation {
     }
 
 
-
     public Activity newActivity(Class<?> clazz, Context context,
                                 IBinder token, Application application, Intent intent, ActivityInfo info,
                                 CharSequence title, Activity parent, String id,
                                 Object lastNonConfigurationInstance) throws InstantiationException,
             IllegalAccessException {
+
         return mBase.newActivity(MainActivity.class, context, token, application, intent, info, title, parent, id, lastNonConfigurationInstance);
     }
-
 
 
     public Activity newActivity(ClassLoader cl, String className,
                                 Intent intent)
             throws InstantiationException, IllegalAccessException,
             ClassNotFoundException {
-        Intent intent1 = new Intent(mContext, mainActivity);
-        return mBase.newActivity(localDexClassLoader,"com.xiaofeiluo.viewtoimagedemo.MainActivity2", intent1);
+//        Intent intent1 = new Intent(mContext, mainActivity);
+        Intent oldIntent = intent.getParcelableExtra("oldIntent");
+        return mBase.newActivity(localDexClassLoader, "com.xiaofeiluo.viewtoimagedemo.MainActivity2", oldIntent);
     }
 }

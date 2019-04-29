@@ -45,14 +45,13 @@ public class MainActivity extends AppCompatActivity {
     private void startPlugActivity(String plugName) {
         String assetsPlugPath = getAssetsPlugPath(plugName);
         String dexoutputpath = "/mnt/sdcard/";
-        ClassLoader localClassLoader = getClass().getClassLoader();
-        DexClassLoader localDexClassLoader = new DexClassLoader(assetsPlugPath, dexoutputpath, null, localClassLoader);
+        DexClassLoader localDexClassLoader = new DexClassLoader(assetsPlugPath, dexoutputpath, null, getClassLoader());
         try {
             Class mainActivity = localDexClassLoader.loadClass("com.xiaofeiluo.viewtoimagedemo.MainActivity2");
             Object instance = mainActivity.newInstance();
             Intent intent = new Intent(this, mainActivity);
             //这里要对starActivity进行hook
-            hook(mainActivity, localDexClassLoader,assetsPlugPath);
+            hook(mainActivity, localDexClassLoader, assetsPlugPath);
             startActivity(intent);
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
@@ -74,11 +73,10 @@ public class MainActivity extends AppCompatActivity {
         ProxyInstrumentation proxyInstrumentation1 = new ProxyInstrumentation(this, mInstrumentation1, mainActivity, localDexClassLoader);
         Reflect.on(mMainThread).set("mInstrumentation", proxyInstrumentation1);
 
-        Resources resources = getResources();
-        AssetManager am = getResources().getAssets();
-        Reflect.on(am).call("addAssetPath",assetsPlugPath);
+        Resources mResources = getResources();
+        AssetManager assets = mResources.getAssets();
+        Reflect.on(assets).call("addAssetPath", assetsPlugPath);
     }
-
 
 
     private String getAssetsPlugPath(String plugName) {
@@ -91,7 +89,7 @@ public class MainActivity extends AppCompatActivity {
         return null;
     }
 
-     private boolean copyAssetAndWrite(String fileName) {
+    private boolean copyAssetAndWrite(String fileName) {
         try {
             File cacheDir = getCacheDir();
             if (!cacheDir.exists()) {
