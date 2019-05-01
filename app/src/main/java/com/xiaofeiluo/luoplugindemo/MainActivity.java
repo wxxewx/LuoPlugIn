@@ -74,7 +74,10 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-
+    @Override
+    public Resources getResources() {
+        return super.getResources();
+    }
 
     private String getAssetsPlugPath(String plugName) {
         boolean b = copyAssetAndWrite(plugName);

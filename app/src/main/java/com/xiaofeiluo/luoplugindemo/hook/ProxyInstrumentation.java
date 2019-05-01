@@ -6,6 +6,8 @@ import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.content.res.AssetManager;
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
@@ -15,6 +17,7 @@ import com.xiaofeiluo.luoplugindemo.MainActivity;
 
 import org.joor.Reflect;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import dalvik.system.DexClassLoader;
@@ -69,7 +72,24 @@ public class ProxyInstrumentation extends Instrumentation {
                                 Object lastNonConfigurationInstance) throws InstantiationException,
             IllegalAccessException {
 
-        return mBase.newActivity(MainActivity.class, context, token, application, intent, info, title, parent, id, lastNonConfigurationInstance);
+        Activity activity = mBase.newActivity(MainActivity.class, context, token, application, intent, info, title, parent, id, lastNonConfigurationInstance);
+        try {
+            AssetManager assets = AssetManager.class.newInstance();
+            Method addAssetPath = assets.getClass().getMethod
+                    ("addAssetPath", String.class);
+            addAssetPath.invoke(assets, plugPath);
+            Resources plugResources = new Resources(assets, mContext.getResources().getDisplayMetrics(), mContext.getResources().getConfiguration());
+            Reflect.on(activity).set("mResources", plugResources);
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        }
+        return activity;
     }
 
 
@@ -79,12 +99,25 @@ public class ProxyInstrumentation extends Instrumentation {
             ClassNotFoundException {
 //        Intent intent1 = new Intent(mContext, mainActivity);
         Intent oldIntent = intent.getParcelableExtra("oldIntent");
-        return mBase.newActivity(localDexClassLoader, "com.xiaofeiluo.viewtoimagedemo.MainActivity2", oldIntent);
+        Activity activity = mBase.newActivity(localDexClassLoader, "com.xiaofeiluo.viewtoimagedemo.MainActivity2", oldIntent);
+        try {
+            AssetManager assets = AssetManager.class.newInstance();
+            Method addAssetPath = assets.getClass().getMethod
+                    ("addAssetPath", String.class);
+            addAssetPath.invoke(assets, plugPath);
+            Resources plugResources = new Resources(assets, mContext.getResources().getDisplayMetrics(), mContext.getResources().getConfiguration());
+            Reflect.on(activity).set("mResources", plugResources);
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        }
+        return activity;
     }
 
 
-    public void callActivityOnCreate(Activity activity, Bundle icicle) {
-        Reflect.on(activity).call("setPlugPath", plugPath);
-        mBase.callActivityOnCreate(activity, icicle);
-    }
 }
