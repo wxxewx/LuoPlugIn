@@ -3,17 +3,17 @@ package com.xiaofeiluo.luoplugindemo.hook;
 import android.app.Activity;
 import android.app.Application;
 import android.app.Instrumentation;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.os.Parcelable;
 import android.util.Log;
 
 import com.xiaofeiluo.luoplugin.StubActivity;
 import com.xiaofeiluo.luoplugindemo.MainActivity;
+
+import org.joor.Reflect;
 
 import java.lang.reflect.Method;
 
@@ -24,12 +24,14 @@ public class ProxyInstrumentation extends Instrumentation {
     private Instrumentation mBase;
     private Class mainActivity;
     private DexClassLoader localDexClassLoader;
+    private String plugPath;
 
-    public ProxyInstrumentation(Context activity, Instrumentation instrumentation, Class mainActivity, DexClassLoader localDexClassLoader) {
+    public ProxyInstrumentation(Context activity, Instrumentation instrumentation, Class mainActivity, DexClassLoader localDexClassLoader, String plugPath) {
         this.mContext = activity;
         this.mBase = instrumentation;
         this.mainActivity = mainActivity;
         this.localDexClassLoader = localDexClassLoader;
+        this.plugPath = plugPath;
     }
 
 
@@ -78,5 +80,11 @@ public class ProxyInstrumentation extends Instrumentation {
 //        Intent intent1 = new Intent(mContext, mainActivity);
         Intent oldIntent = intent.getParcelableExtra("oldIntent");
         return mBase.newActivity(localDexClassLoader, "com.xiaofeiluo.viewtoimagedemo.MainActivity2", oldIntent);
+    }
+
+
+    public void callActivityOnCreate(Activity activity, Bundle icicle) {
+        Reflect.on(activity).call("setPlugPath", plugPath);
+        mBase.callActivityOnCreate(activity, icicle);
     }
 }

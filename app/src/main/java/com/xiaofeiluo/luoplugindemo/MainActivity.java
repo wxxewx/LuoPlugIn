@@ -4,7 +4,6 @@ import android.app.Instrumentation;
 import android.content.Intent;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
-import android.renderscript.ScriptGroup;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -19,8 +18,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 
 import dalvik.system.DexClassLoader;
 
@@ -28,6 +25,8 @@ public class MainActivity extends AppCompatActivity {
 
     private Button button1;
 
+    private Resources plugResources;
+    AssetManager assets = null;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -39,7 +38,6 @@ public class MainActivity extends AppCompatActivity {
                 startPlugActivity("plug.apk");
             }
         });
-
     }
 
     private void startPlugActivity(String plugName) {
@@ -51,7 +49,7 @@ public class MainActivity extends AppCompatActivity {
             Object instance = mainActivity.newInstance();
             Intent intent = new Intent(this, mainActivity);
             //这里要对starActivity进行hook
-            hook(mainActivity, localDexClassLoader, assetsPlugPath);
+            hook(mainActivity, localDexClassLoader, assetsPlugPath,dexoutputpath);
             startActivity(intent);
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
@@ -62,28 +60,27 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void hook(Class mainActivity, DexClassLoader localDexClassLoader, String assetsPlugPath) {
+    private void hook(Class mainActivity, DexClassLoader localDexClassLoader, String plugPath, String dexPath) {
         //替换activity的mInstrumentation
         Instrumentation mInstrumentation = Reflect.on(this).field("mInstrumentation").get();
-        ProxyInstrumentation proxyInstrumentation = new ProxyInstrumentation(this, mInstrumentation, mainActivity, localDexClassLoader);
+        ProxyInstrumentation proxyInstrumentation = new ProxyInstrumentation(this, mInstrumentation, mainActivity, localDexClassLoader,plugPath);
         Reflect.on(this).set("mInstrumentation", proxyInstrumentation);
         //替换activityThread的mInstrumentation
         Object mMainThread = Reflect.on(this).field("mMainThread").get();
         Instrumentation mInstrumentation1 = Reflect.on(mMainThread).field("mInstrumentation").get();
-        ProxyInstrumentation proxyInstrumentation1 = new ProxyInstrumentation(this, mInstrumentation1, mainActivity, localDexClassLoader);
+        ProxyInstrumentation proxyInstrumentation1 = new ProxyInstrumentation(this, mInstrumentation1, mainActivity, localDexClassLoader, plugPath);
         Reflect.on(mMainThread).set("mInstrumentation", proxyInstrumentation1);
 
-        Resources mResources = getResources();
-        AssetManager assets = mResources.getAssets();
-        Reflect.on(assets).call("addAssetPath", assetsPlugPath);
+
     }
+
 
 
     private String getAssetsPlugPath(String plugName) {
         boolean b = copyAssetAndWrite(plugName);
         if (b) {
             File dataFile = new File(getCacheDir(), plugName);
-            Log.d("getAssetsPlugPath", "filePath:" + dataFile.getAbsolutePath());
+            Log.d("getAssetsPlugPath", "filePath:" + dataFile.getPath());
             return dataFile.getAbsolutePath();
         }
         return null;
