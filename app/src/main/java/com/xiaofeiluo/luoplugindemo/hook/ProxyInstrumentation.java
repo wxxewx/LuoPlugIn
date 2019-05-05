@@ -105,6 +105,8 @@ public class ProxyInstrumentation extends Instrumentation {
             Method addAssetPath = assets.getClass().getMethod
                     ("addAssetPath", String.class);
             addAssetPath.invoke(assets, plugPath);
+            Object mResourcesImpl = Reflect.on(mContext.getResources()).field("mResourcesImpl").get();
+
             Resources plugResources = new Resources(assets, mContext.getResources().getDisplayMetrics(), mContext.getResources().getConfiguration());
             Reflect.on(activity).set("mResources", plugResources);
         } catch (IllegalAccessException e) {
@@ -118,6 +120,7 @@ public class ProxyInstrumentation extends Instrumentation {
         }
         return activity;
     }
+
 
 
 }

@@ -1,16 +1,19 @@
 package com.xiaofeiluo.luoplugindemo;
 
-import android.app.Instrumentation;
+import android.app.ActivityManager;
+import android.content.Context;
 import android.content.Intent;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.os.Handler;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
-import com.xiaofeiluo.luoplugindemo.hook.ProxyInstrumentation;
+import com.xiaofeiluo.luoplugindemo.hook.ProxyActivityMannage;
+import com.xiaofeiluo.luoplugindemo.hook.ProxyCallBack;
 
 import org.joor.Reflect;
 
@@ -18,15 +21,17 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Proxy;
 
 import dalvik.system.DexClassLoader;
 
-public class MainActivity extends AppCompatActivity {
+public class HookActivity extends AppCompatActivity {
 
     private Button button1;
 
     private Resources plugResources;
     AssetManager assets = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -50,8 +55,30 @@ public class MainActivity extends AppCompatActivity {
             Class mainActivity = localDexClassLoader.loadClass("com.xiaofeiluo.viewtoimagedemo.MainActivity2");
             Object instance = mainActivity.newInstance();
             Intent intent = new Intent(this, mainActivity);
-            //这里要对starActivity进行hook
-            hook(mainActivity, localDexClassLoader, assetsPlugPath,dexoutputpath);
+
+            ActivityManager activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+            Object getService = Reflect.on(activityManager).call("getService").get();
+            Object iActivityManagerSingleton = Reflect.on(activityManager).field("IActivityManagerSingleton").get();
+            Object mInstance = Reflect.on(iActivityManagerSingleton).field("mInstance").get();
+
+
+            Class<?> aClass = Class.forName("android.app.IActivityManager");
+
+
+            Object newProxyInstance = Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(),
+                    new Class[]{aClass},
+                    new ProxyActivityMannage(mInstance));
+            Reflect.on(iActivityManagerSingleton).set("mInstance",newProxyInstance);
+
+            //hook activityThread H 类 callback
+
+            Object sCurrentActivityThread = Reflect.on("android.app.ActivityThread").call("currentActivityThread").get();
+
+            Handler mH = Reflect.on(sCurrentActivityThread).field("mH").get();
+            Handler.Callback mCallback = Reflect.on(mH).field("mCallback").get();
+
+            Reflect.on(mH).set("mCallback",new ProxyCallBack(mCallback));
+
             startActivity(intent);
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
@@ -62,24 +89,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void hook(Class mainActivity, DexClassLoader localDexClassLoader, String plugPath, String dexPath) {
-        //替换activity的mInstrumentation
-        Instrumentation mInstrumentation = Reflect.on(this).field("mInstrumentation").get();
-        ProxyInstrumentation proxyInstrumentation = new ProxyInstrumentation(this, mInstrumentation, mainActivity, localDexClassLoader,dexPath);
-        Reflect.on(this).set("mInstrumentation", proxyInstrumentation);
-        //替换activityThread的mInstrumentation
-        Object mMainThread = Reflect.on(this).field("mMainThread").get();
-        Instrumentation mInstrumentation1 = Reflect.on(mMainThread).field("mInstrumentation").get();
-        ProxyInstrumentation proxyInstrumentation1 = new ProxyInstrumentation(this, mInstrumentation1, mainActivity, localDexClassLoader, dexPath);
-        Reflect.on(mMainThread).set("mInstrumentation", proxyInstrumentation1);
-
-
-    }
-
-    @Override
-    public Resources getResources() {
-        return super.getResources();
-    }
 
     private String getAssetsPlugPath(String plugName) {
         boolean b = copyAssetAndWrite(plugName);
