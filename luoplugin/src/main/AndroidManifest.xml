@@ -3,7 +3,8 @@
     package="com.xiaofeiluo.luoplugin">
 
     <application>
-        <activity android:name="com.xiaofeiluo.luoplugin.StubActivity"></activity>
+        <activity android:name="com.xiaofeiluo.luoplugin.StubActivity"
+            ></activity>
     </application>
 
 </manifest>

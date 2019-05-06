@@ -1,5 +1,6 @@
 package com.xiaofeiluo.luoplugindemo;
 
+import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.Instrumentation;
 import android.content.Context;
@@ -35,6 +36,7 @@ public class HookActivity extends AppCompatActivity {
 
     private Resources plugResources;
     AssetManager assets = null;
+    private Resources resources;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,6 +51,11 @@ public class HookActivity extends AppCompatActivity {
         });
 
 
+    }
+
+    @Override
+    public Resources.Theme getTheme() {
+        return super.getTheme();
     }
 
     private void startPlugActivity(String plugName) {
@@ -88,6 +95,8 @@ public class HookActivity extends AppCompatActivity {
             ProxyInstrumentation2 proxyInstrumentation2 = new ProxyInstrumentation2(this, mInstrumentation1, mainActivity, localDexClassLoader, assetsPlugPath);
             Reflect.on(sCurrentActivityThread).set("mInstrumentation", proxyInstrumentation2);
 
+
+
             startActivity(intent);
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
@@ -97,6 +106,7 @@ public class HookActivity extends AppCompatActivity {
             e.printStackTrace();
         }
     }
+
 
 
     private String getAssetsPlugPath(String plugName) {
